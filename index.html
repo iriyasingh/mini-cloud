@@ -1,0 +1,112 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Cloud Notes</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f2f5f9;
+    }
+    h1 { color: #2457a7; }
+    input, button {
+      padding: 12px;
+      margin: 5px 0;
+      box-sizing: border-box;
+    }
+    input { width: 100%; }
+    button {
+      background: #2457a7;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    li {
+      background: white;
+      padding: 12px;
+      margin: 8px 0;
+      overflow-wrap: anywhere;
+    }
+  </style>
+</head>
+<body>
+  <h1>Mini Cloud Notes</h1>
+  <p>Save your notes to a cloud database.</p>
+
+  <input id="note" placeholder="Enter a note">
+  <button id="save">Save Note</button>
+  <p id="status"></p>
+  <h2>Saved Notes</h2>
+  <ul id="notes"></ul>
+
+  <script type="module">
+    import { initializeApp } from
+      "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc,
+      getDocs, query, orderBy, serverTimestamp
+    } from
+      "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+     apiKey: "AIzaSyDywwMPVUZwPm9V2vB_JDbM6k5NQCBWBSY",
+     authDomain: "cloud-mini-project-1018d.firebaseapp.com",
+     projectId: "cloud-mini-project-1018d",
+ 
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function loadNotes() {
+      const list = document.getElementById("notes");
+      list.replaceChildren();
+
+      const q = query(
+        collection(db, "notes"),
+        orderBy("createdAt", "desc")
+      );
+      const snapshot = await getDocs(q);
+
+      snapshot.forEach((doc) => {
+        const li = document.createElement("li");
+        li.textContent = doc.data().text;
+        list.appendChild(li);
+      });
+    }
+
+    document.getElementById("save").addEventListener("click",
+      async () => {
+        const input = document.getElementById("note");
+        const status = document.getElementById("status");
+        const text = input.value.trim();
+
+        if (!text) {
+          status.textContent = "Please enter a note.";
+          return;
+        }
+
+        try {
+          await addDoc(collection(db, "notes"), {
+            text,
+            createdAt: serverTimestamp()
+          });
+          input.value = "";
+          status.textContent = "Note saved successfully!";
+          await loadNotes();
+        } catch (error) {
+          status.textContent =
+            "Could not save note. Check Firebase configuration and security rules.";
+          console.error(error);
+        }
+      });
+
+    loadNotes().catch(console.error);
+  </script>
+</body>
+</html>
